@@ -490,55 +490,51 @@ function renderCalendar() {
   });
   const firstDay = new Date(state.selectedYear, state.selectedMonth - 1, 1).getDay();
   const lastDay = new Date(state.selectedYear, state.selectedMonth, 0).getDate();
+  const rowCount = Math.ceil((firstDay + lastDay) / 7);
   const cells = [];
-
-  for (let index = 0; index < firstDay; index += 1) {
-    const emptyCell = document.createElement("div");
-    emptyCell.className = "calendar-cell is-empty";
-    cells.push(emptyCell);
-  }
+  const bars = [];
 
   for (let day = 1; day <= lastDay; day += 1) {
-    const date = formatDate(state.selectedYear, state.selectedMonth, day);
-    const cellTasks = tasks.filter((task) => isTaskOnDate(task, date));
+    const position = firstDay + day - 1;
     const cell = document.createElement("div");
     cell.className = "calendar-cell";
+    cell.style.gridColumn = `${(position % 7) + 1}`;
+    cell.style.gridRow = `${Math.floor(position / 7) + 1}`;
     cell.innerHTML = `<strong>${day}</strong>`;
-
-    const list = document.createElement("div");
-    list.className = "calendar-items";
-
-    cellTasks.slice(0, 4).forEach((task) => {
-      const start = task.startDate || task.endDate;
-      const end = task.endDate || task.startDate;
-      const dayOfWeek = new Date(state.selectedYear, state.selectedMonth - 1, day).getDay();
-      const isStart = date === start || day === 1 || dayOfWeek === 0;
-      const isEnd = date === end || day === lastDay || dayOfWeek === 6;
-      const item = document.createElement("span");
-      item.className = "calendar-item";
-      item.dataset.category = task.category;
-      item.classList.toggle("is-start", isStart);
-      item.classList.toggle("is-middle", !isStart && !isEnd);
-      item.classList.toggle("is-end", isEnd);
-      const calendarLabel = `${task.text} - ${PEOPLE[task.person]}`;
-      item.textContent = isStart ? calendarLabel : "";
-      item.dataset.label = calendarLabel;
-      item.title = calendarLabel;
-      list.append(item);
-    });
-
-    if (cellTasks.length > 4) {
-      const more = document.createElement("span");
-      more.className = "calendar-more";
-      more.textContent = `+${cellTasks.length - 4}개`;
-      list.append(more);
-    }
-
-    cell.append(list);
     cells.push(cell);
   }
 
-  elements.calendarBoard.replaceChildren(...cells);
+  const datedTasks = tasks
+    .filter((task) => task.startDate || task.endDate)
+    .filter(isTaskInSelectedMonth)
+    .sort((a, b) => (a.startDate || a.endDate).localeCompare(b.startDate || b.endDate));
+
+  datedTasks.slice(0, 12).forEach((task, taskIndex) => {
+    const start = task.startDate || task.endDate;
+    const end = task.endDate || task.startDate;
+    const startDay = start < getMonthStartDate() ? 1 : Number(start.slice(8, 10));
+    const endDay = end > getMonthEndDate() ? lastDay : Number(end.slice(8, 10));
+    const startPosition = firstDay + startDay - 1;
+    const endPosition = firstDay + endDay - 1;
+    const label = `${task.text} - ${PEOPLE[task.person]}`;
+
+    for (let row = Math.floor(startPosition / 7); row <= Math.floor(endPosition / 7); row += 1) {
+      const segmentStart = Math.max(startPosition, row * 7);
+      const segmentEnd = Math.min(endPosition, row * 7 + 6);
+      const bar = document.createElement("span");
+      bar.className = "calendar-bar";
+      bar.dataset.category = task.category;
+      bar.textContent = label;
+      bar.title = label;
+      bar.style.gridColumn = `${(segmentStart % 7) + 1} / ${(segmentEnd % 7) + 2}`;
+      bar.style.gridRow = `${row + 1}`;
+      bar.style.setProperty("--lane", String(taskIndex % 4));
+      bars.push(bar);
+    }
+  });
+
+  elements.calendarBoard.style.setProperty("--calendar-rows", String(rowCount));
+  elements.calendarBoard.replaceChildren(...cells, ...bars);
 }
 
 elements.yearForm.addEventListener("submit", (event) => {

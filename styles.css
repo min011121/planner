@@ -669,6 +669,10 @@ h3 {
   gap: 8px;
 }
 
+.calendar-board {
+  grid-template-rows: repeat(var(--calendar-rows, 5), minmax(118px, auto));
+}
+
 .calendar-weekdays {
   margin-bottom: 8px;
   color: var(--muted);
@@ -678,7 +682,6 @@ h3 {
 }
 
 .calendar-cell {
-  min-height: 118px;
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -695,6 +698,35 @@ h3 {
   display: block;
   margin-bottom: 8px;
   color: var(--primary-strong);
+}
+
+.calendar-bar {
+  z-index: 2;
+  align-self: start;
+  min-width: 0;
+  height: 24px;
+  margin-top: calc(38px + (var(--lane) * 27px));
+  overflow: hidden;
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: color-mix(in srgb, var(--primary) 18%, var(--surface));
+  color: var(--primary-strong);
+  font-size: 0.74rem;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.calendar-bar[data-category="study"] {
+  background: color-mix(in srgb, var(--study) 18%, var(--surface));
+  color: var(--study);
+}
+
+.calendar-bar[data-category="certificate"] {
+  background: color-mix(in srgb, var(--cert) 18%, var(--surface));
+  color: var(--cert);
 }
 
 .calendar-items {
@@ -776,7 +808,7 @@ h3 {
   }
 
   .calendar-cell {
-    min-height: 96px;
+    min-height: auto;
   }
 }
 
@@ -900,9 +932,27 @@ h3 {
     gap: 4px;
   }
 
+  .calendar-board {
+    grid-template-rows: repeat(var(--calendar-rows, 5), minmax(106px, auto));
+  }
+
   .calendar-cell {
-    min-height: 112px;
     padding: 6px;
+  }
+
+  .calendar-cell strong {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+  }
+
+  .calendar-bar {
+    height: auto;
+    min-height: 22px;
+    margin-top: calc(28px + (var(--lane) * 24px));
+    padding: 4px 6px;
+    font-size: 0.66rem;
+    line-height: 1.18;
+    text-overflow: ellipsis;
   }
 
   .calendar-item,
