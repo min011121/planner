@@ -36,7 +36,6 @@ const elements = {
   yearTitleInput: document.querySelector("#yearTitleInput"),
   yearStrip: document.querySelector("#yearStrip"),
   monthSelect: document.querySelector("#monthSelect"),
-  monthTitleInput: document.querySelector("#monthTitleInput"),
   taskForm: document.querySelector("#taskForm"),
   taskInput: document.querySelector("#taskInput"),
   personSelect: document.querySelector("#personSelect"),
@@ -305,7 +304,6 @@ function render() {
   elements.summaryTitle.textContent = `${state.selectedMonth}월 한눈에 보기`;
   elements.calendarTitle.textContent = `${state.selectedYear}년 ${state.selectedMonth}월 달력`;
   elements.yearTitleInput.value = yearTitle;
-  elements.monthTitleInput.value = monthTitle;
 
   renderYears();
   renderMonthSelect();
@@ -566,10 +564,25 @@ elements.monthSelect.addEventListener("change", () => {
   render();
 });
 
-elements.monthTitleInput.addEventListener("change", () => {
-  getMonthData().title = elements.monthTitleInput.value.trim();
+function editMonthTitle() {
+  const currentTitle = getMonthData().title || "";
+  const nextTitle = window.prompt("이번 달 프로젝트 이름", currentTitle || `${state.selectedMonth}월 계획`);
+
+  if (nextTitle === null) {
+    return;
+  }
+
+  getMonthData().title = nextTitle.trim();
   saveData();
   render();
+}
+
+elements.selectedMonthTitle.addEventListener("click", editMonthTitle);
+elements.selectedMonthTitle.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    editMonthTitle();
+  }
 });
 
 elements.startDateInput.addEventListener("change", () => {
