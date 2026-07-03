@@ -522,6 +522,7 @@ function renderCalendar() {
       item.classList.toggle("is-end", isEnd);
       const calendarLabel = `${task.text} - ${PEOPLE[task.person]}`;
       item.textContent = isStart ? calendarLabel : "";
+      item.dataset.label = calendarLabel;
       item.title = calendarLabel;
       list.append(item);
     });

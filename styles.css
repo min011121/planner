@@ -436,7 +436,7 @@ h3 {
   padding: 9px 12px;
   background: var(--surface-soft);
   color: var(--primary-strong);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 900;
 }
 
@@ -782,7 +782,8 @@ h3 {
 
 @media (max-width: 620px) {
   .app-shell {
-    padding: 16px;
+    padding: 10px;
+    overflow-x: hidden;
   }
 
   .topbar,
@@ -816,18 +817,123 @@ h3 {
     flex: 1;
   }
 
+  .year-panel,
+  .overview-bar,
+  .month-detail,
+  .calendar-panel {
+    padding: 14px;
+  }
+
+  .project-title-field input,
+  .task-main-input,
+  .task-form input,
+  .task-form select {
+    max-width: 100%;
+    min-width: 0;
+    font-size: 0.9rem;
+  }
+
+  .task-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .task-options button {
+    width: 100%;
+  }
+
+  .task-table-wrap {
+    overflow-x: visible;
+  }
+
+  .task-table {
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 0.78rem;
+  }
+
+  .task-table th,
+  .task-table td {
+    padding: 9px 8px;
+  }
+
+  .task-table th:nth-child(4),
+  .task-table td:nth-child(4),
+  .task-table th:nth-child(5),
+  .task-table td:nth-child(5),
+  .task-table th:nth-child(6),
+  .task-table td:nth-child(6) {
+    display: none;
+  }
+
+  .task-table th:nth-child(1) {
+    width: 34%;
+  }
+
+  .task-table th:nth-child(2) {
+    width: 42%;
+  }
+
+  .task-table th:nth-child(3) {
+    width: 24%;
+  }
+
+  .person-section-row td {
+    font-size: 0.78rem;
+  }
+
+  .person-section-row span {
+    font-size: 0.72rem;
+  }
+
+  .status-pill,
+  .category-chip {
+    padding: 4px 7px;
+    font-size: 0.72rem;
+  }
+
+  .activity-cell strong {
+    overflow-wrap: anywhere;
+  }
+
   .calendar-weekdays,
   .calendar-board {
     gap: 4px;
   }
 
   .calendar-cell {
-    min-height: 82px;
-    padding: 7px;
+    min-height: 112px;
+    padding: 6px;
   }
 
   .calendar-item,
   .calendar-more {
-    font-size: 0.68rem;
+    min-height: auto;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 5px !important;
+    padding: 4px 5px;
+    color: var(--primary-strong) !important;
+    font-size: 0.66rem;
+    line-height: 1.18;
+    text-overflow: clip;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .calendar-item:not(.is-start) {
+    color: var(--primary-strong) !important;
+  }
+
+  .calendar-item:not(.is-start)::before {
+    content: attr(data-label);
+  }
+
+  .calendar-item[data-category="study"] {
+    color: var(--study) !important;
+  }
+
+  .calendar-item[data-category="certificate"] {
+    color: var(--cert) !important;
   }
 }
