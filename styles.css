@@ -527,15 +527,33 @@ h3 {
   display: block;
 }
 
+.action-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.row-edit,
 .row-delete {
-  width: 30px;
+  min-width: 30px;
   height: 30px;
   border: 0;
-  border-radius: 50%;
+  border-radius: 999px;
+  padding: 0 9px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.row-edit {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary-strong);
+}
+
+.row-delete {
   background: color-mix(in srgb, var(--accent) 13%, transparent);
   color: var(--accent);
   font-size: 1.2rem;
-  line-height: 1;
 }
 
 .empty-row td {
@@ -926,22 +944,41 @@ h3 {
   .task-table th:nth-child(4),
   .task-table td:nth-child(4),
   .task-table th:nth-child(5),
-  .task-table td:nth-child(5),
-  .task-table th:nth-child(6),
-  .task-table td:nth-child(6) {
+  .task-table td:nth-child(5) {
     display: none;
   }
 
   .task-table th:nth-child(1) {
-    width: 34%;
+    width: 28%;
   }
 
   .task-table th:nth-child(2) {
-    width: 42%;
+    width: 34%;
   }
 
   .task-table th:nth-child(3) {
-    width: 24%;
+    width: 20%;
+  }
+
+  .task-table th:nth-child(6) {
+    width: 18%;
+  }
+
+  .action-cell {
+    gap: 4px;
+  }
+
+  .row-edit,
+  .row-delete {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 7px;
+    font-size: 0.7rem;
+  }
+
+  .row-delete {
+    padding: 0;
+    font-size: 1rem;
   }
 
   .person-section-row td {

@@ -432,12 +432,18 @@ function createTaskRow(person, task) {
   dateCell.textContent = formatDateLabel(task.startDate, task.endDate);
 
   const actionCell = document.createElement("td");
+  actionCell.className = "action-cell";
+  const editButton = document.createElement("button");
+  editButton.className = "row-edit";
+  editButton.type = "button";
+  editButton.setAttribute("aria-label", "수정");
+  editButton.textContent = "수정";
   const removeButton = document.createElement("button");
   removeButton.className = "row-delete";
   removeButton.type = "button";
   removeButton.setAttribute("aria-label", "삭제");
   removeButton.textContent = "×";
-  actionCell.append(removeButton);
+  actionCell.append(editButton, removeButton);
 
   checkbox.addEventListener("change", () => {
     task.done = checkbox.checked;
@@ -446,7 +452,15 @@ function createTaskRow(person, task) {
     render();
   });
 
+  editButton.addEventListener("click", () => {
+    editTask(person, task);
+  });
+
   removeButton.addEventListener("click", () => {
+    if (!window.confirm("이 할 일을 삭제할까요?")) {
+      return;
+    }
+
     const tasks = getMonthData()[person];
     const index = tasks.findIndex((item) => item.id === task.id);
     if (index >= 0) {
@@ -458,6 +472,81 @@ function createTaskRow(person, task) {
 
   row.append(statusCell, activityCell, categoryCell, editedCell, dateCell, actionCell);
   return row;
+}
+
+function promptChoice(title, choices, currentValue) {
+  const choiceText = Object.entries(choices)
+    .map(([value, label]) => `${value}: ${label}`)
+    .join("\n");
+  const answer = window.prompt(`${title}\n${choiceText}`, currentValue);
+
+  if (answer === null) {
+    return null;
+  }
+
+  return choices[answer] ? answer : currentValue;
+}
+
+function editTask(person, task) {
+  const nextText = window.prompt("활동", task.text);
+  if (nextText === null) {
+    return;
+  }
+
+  const nextPerson = promptChoice("담당", PEOPLE, person);
+  if (nextPerson === null) {
+    return;
+  }
+
+  const nextCategory = promptChoice("유형", CATEGORIES, task.category);
+  if (nextCategory === null) {
+    return;
+  }
+
+  const statusAnswer = window.prompt("상태를 입력하세요: 진행 또는 완료", task.done ? "완료" : "진행");
+  if (statusAnswer === null) {
+    return;
+  }
+
+  let nextStartDate = window.prompt("시작일", task.startDate || getMonthStartDate());
+  if (nextStartDate === null) {
+    return;
+  }
+
+  let nextEndDate = window.prompt("종료일", task.endDate || nextStartDate);
+  if (nextEndDate === null) {
+    return;
+  }
+
+  nextStartDate = nextStartDate.trim();
+  nextEndDate = nextEndDate.trim() || nextStartDate;
+
+  if (nextStartDate && nextEndDate && nextEndDate < nextStartDate) {
+    [nextStartDate, nextEndDate] = [nextEndDate, nextStartDate];
+  }
+
+  const monthData = getMonthData();
+  const currentTasks = monthData[person];
+  const index = currentTasks.findIndex((item) => item.id === task.id);
+
+  if (index < 0) {
+    return;
+  }
+
+  const updatedTask = {
+    ...task,
+    text: nextText.trim() || task.text,
+    category: nextCategory,
+    startDate: nextStartDate,
+    endDate: nextEndDate,
+    done: statusAnswer.trim() === "완료",
+    updatedAt: new Date().toISOString(),
+  };
+
+  currentTasks.splice(index, 1);
+  monthData[nextPerson].push(updatedTask);
+  saveData();
+  render();
 }
 
 function renderSummary() {
