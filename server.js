@@ -1,10 +1,14 @@
 const path = require("path");
+const crypto = require("crypto");
 const express = require("express");
 const mysql = require("mysql2/promise");
 require("dotenv").config();
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
+const appPassword = process.env.APP_PASSWORD || "";
+const sessionSecret = process.env.SESSION_SECRET || appPassword || "local-dev-secret";
+const sessionCookieName = "planner_session";
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || "localhost",
@@ -19,6 +23,63 @@ const pool = mysql.createPool({
 
 app.use(express.json({ limit: "1mb" }));
 
+function parseCookies(req) {
+  return Object.fromEntries(
+    (req.headers.cookie || "")
+      .split(";")
+      .map((cookie) => cookie.trim())
+      .filter(Boolean)
+      .map((cookie) => {
+        const index = cookie.indexOf("=");
+        return [decodeURIComponent(cookie.slice(0, index)), decodeURIComponent(cookie.slice(index + 1))];
+      }),
+  );
+}
+
+function signSession(value) {
+  return crypto.createHmac("sha256", sessionSecret).update(value).digest("hex");
+}
+
+function isAuthenticated(req) {
+  if (!appPassword) {
+    return true;
+  }
+
+  const cookies = parseCookies(req);
+  const token = cookies[sessionCookieName];
+  return token === signSession("authenticated");
+}
+
+function requireAuth(req, res, next) {
+  if (isAuthenticated(req)) {
+    return next();
+  }
+
+  return res.status(401).json({ message: "비밀번호가 필요합니다." });
+}
+
+app.get("/api/session", (req, res) => {
+  res.json({ authenticated: isAuthenticated(req), passwordRequired: Boolean(appPassword) });
+});
+
+app.post("/api/login", (req, res) => {
+  if (!appPassword) {
+    return res.json({ ok: true });
+  }
+
+  if (req.body.password !== appPassword) {
+    return res.status(401).json({ message: "비밀번호가 맞지 않습니다." });
+  }
+
+  res.cookie(sessionCookieName, signSession("authenticated"), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: req.secure || req.headers["x-forwarded-proto"] === "https",
+    maxAge: 1000 * 60 * 60 * 24 * 30,
+  });
+  res.json({ ok: true });
+});
+
 app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
@@ -28,7 +89,7 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-app.get("/api/planners/:id", async (req, res) => {
+app.get("/api/planners/:id", requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.execute("SELECT data FROM planners WHERE id = ?", [req.params.id]);
 
@@ -43,7 +104,7 @@ app.get("/api/planners/:id", async (req, res) => {
   }
 });
 
-app.put("/api/planners/:id", async (req, res) => {
+app.put("/api/planners/:id", requireAuth, async (req, res) => {
   try {
     await pool.execute(
       `

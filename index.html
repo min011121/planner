@@ -7,6 +7,16 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <section class="auth-screen" id="authScreen" hidden>
+      <form class="auth-card" id="authForm">
+        <p class="label">Private Planner</p>
+        <h2>비밀번호를 입력해주세요</h2>
+        <input id="passwordInput" type="password" autocomplete="current-password" placeholder="비밀번호" aria-label="비밀번호" />
+        <button type="submit">들어가기</button>
+        <p class="auth-error" id="authError" role="alert"></p>
+      </form>
+    </section>
+
     <main class="app-shell">
       <header class="topbar">
         <div>

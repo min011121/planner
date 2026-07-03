@@ -49,6 +49,10 @@ const elements = {
   syncStatus: document.querySelector("#syncStatus"),
   taskTableBody: document.querySelector("#taskTableBody"),
   themeToggle: document.querySelector("#themeToggle"),
+  authScreen: document.querySelector("#authScreen"),
+  authForm: document.querySelector("#authForm"),
+  passwordInput: document.querySelector("#passwordInput"),
+  authError: document.querySelector("#authError"),
 };
 
 function createDefaultData() {
@@ -113,6 +117,26 @@ async function loadData() {
 
   ensureYear(state.selectedYear);
   render();
+}
+
+async function initializeApp() {
+  try {
+    const response = await fetch("/api/session");
+    const session = await response.json();
+
+    if (session.passwordRequired && !session.authenticated) {
+      elements.authScreen.hidden = false;
+      elements.passwordInput.focus();
+      return;
+    }
+  } catch {
+    elements.authScreen.hidden = false;
+    elements.authError.textContent = "서버 연결을 확인해주세요.";
+    return;
+  }
+
+  elements.authScreen.hidden = true;
+  loadData();
 }
 
 function normalizeData(data) {
@@ -596,4 +620,31 @@ elements.themeToggle.addEventListener("click", () => {
   render();
 });
 
-loadData();
+elements.authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  elements.authError.textContent = "";
+
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: elements.passwordInput.value }),
+    });
+
+    if (!response.ok) {
+      elements.authError.textContent = "비밀번호가 맞지 않습니다.";
+      elements.passwordInput.select();
+      return;
+    }
+
+    elements.passwordInput.value = "";
+    elements.authScreen.hidden = true;
+    loadData();
+  } catch {
+    elements.authError.textContent = "서버 연결을 확인해주세요.";
+  }
+});
+
+initializeApp();
