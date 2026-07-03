@@ -97,7 +97,15 @@
               <span>종료</span>
               <input id="endDateInput" type="date" aria-label="종료일" />
             </label>
-            <button type="submit">등록</button>
+            <label>
+              <span>상태</span>
+              <select id="statusSelect" aria-label="상태 선택">
+                <option value="active">진행 중</option>
+                <option value="done">완료</option>
+              </select>
+            </label>
+            <button id="taskSubmitButton" type="submit">등록</button>
+            <button id="taskCancelButton" class="secondary-button" type="button" hidden>취소</button>
           </div>
         </form>
 

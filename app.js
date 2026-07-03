@@ -24,6 +24,7 @@ const state = {
   data: createDefaultData(),
   isOnline: false,
   saveTimer: null,
+  editingTask: null,
 };
 
 const elements = {
@@ -42,6 +43,9 @@ const elements = {
   categorySelect: document.querySelector("#categorySelect"),
   startDateInput: document.querySelector("#startDateInput"),
   endDateInput: document.querySelector("#endDateInput"),
+  statusSelect: document.querySelector("#statusSelect"),
+  taskSubmitButton: document.querySelector("#taskSubmitButton"),
+  taskCancelButton: document.querySelector("#taskCancelButton"),
   progressPill: document.querySelector("#progressPill"),
   summaryList: document.querySelector("#summaryList"),
   calendarBoard: document.querySelector("#calendarBoard"),
@@ -453,7 +457,7 @@ function createTaskRow(person, task) {
   });
 
   editButton.addEventListener("click", () => {
-    editTask(person, task);
+    beginTaskEdit(person, task);
   });
 
   removeButton.addEventListener("click", () => {
@@ -474,79 +478,26 @@ function createTaskRow(person, task) {
   return row;
 }
 
-function promptChoice(title, choices, currentValue) {
-  const choiceText = Object.entries(choices)
-    .map(([value, label]) => `${value}: ${label}`)
-    .join("\n");
-  const answer = window.prompt(`${title}\n${choiceText}`, currentValue);
-
-  if (answer === null) {
-    return null;
-  }
-
-  return choices[answer] ? answer : currentValue;
+function beginTaskEdit(person, task) {
+  state.editingTask = { person, id: task.id };
+  elements.taskInput.value = task.text;
+  elements.personSelect.value = person;
+  elements.categorySelect.value = task.category || "todo";
+  elements.startDateInput.value = task.startDate || getMonthStartDate();
+  elements.endDateInput.value = task.endDate || task.startDate || getMonthStartDate();
+  elements.statusSelect.value = task.done ? "done" : "active";
+  elements.taskSubmitButton.textContent = "수정 저장";
+  elements.taskCancelButton.hidden = false;
+  elements.taskInput.focus();
 }
 
-function editTask(person, task) {
-  const nextText = window.prompt("활동", task.text);
-  if (nextText === null) {
-    return;
-  }
-
-  const nextPerson = promptChoice("담당", PEOPLE, person);
-  if (nextPerson === null) {
-    return;
-  }
-
-  const nextCategory = promptChoice("유형", CATEGORIES, task.category);
-  if (nextCategory === null) {
-    return;
-  }
-
-  const statusAnswer = window.prompt("상태를 입력하세요: 진행 또는 완료", task.done ? "완료" : "진행");
-  if (statusAnswer === null) {
-    return;
-  }
-
-  let nextStartDate = window.prompt("시작일", task.startDate || getMonthStartDate());
-  if (nextStartDate === null) {
-    return;
-  }
-
-  let nextEndDate = window.prompt("종료일", task.endDate || nextStartDate);
-  if (nextEndDate === null) {
-    return;
-  }
-
-  nextStartDate = nextStartDate.trim();
-  nextEndDate = nextEndDate.trim() || nextStartDate;
-
-  if (nextStartDate && nextEndDate && nextEndDate < nextStartDate) {
-    [nextStartDate, nextEndDate] = [nextEndDate, nextStartDate];
-  }
-
-  const monthData = getMonthData();
-  const currentTasks = monthData[person];
-  const index = currentTasks.findIndex((item) => item.id === task.id);
-
-  if (index < 0) {
-    return;
-  }
-
-  const updatedTask = {
-    ...task,
-    text: nextText.trim() || task.text,
-    category: nextCategory,
-    startDate: nextStartDate,
-    endDate: nextEndDate,
-    done: statusAnswer.trim() === "완료",
-    updatedAt: new Date().toISOString(),
-  };
-
-  currentTasks.splice(index, 1);
-  monthData[nextPerson].push(updatedTask);
-  saveData();
-  render();
+function resetTaskForm() {
+  state.editingTask = null;
+  elements.taskInput.value = "";
+  elements.statusSelect.value = "active";
+  elements.taskSubmitButton.textContent = "등록";
+  elements.taskCancelButton.hidden = true;
+  syncDateInputs();
 }
 
 function renderSummary() {
@@ -685,6 +636,7 @@ elements.taskForm.addEventListener("submit", (event) => {
   const text = elements.taskInput.value.trim();
   const person = elements.personSelect.value;
   const category = elements.categorySelect.value;
+  const done = elements.statusSelect.value === "done";
   let startDate = elements.startDateInput.value;
   let endDate = elements.endDateInput.value;
 
@@ -697,20 +649,47 @@ elements.taskForm.addEventListener("submit", (event) => {
     [startDate, endDate] = [endDate, startDate];
   }
 
-  getMonthData()[person].push({
-    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-    text,
-    category,
-    startDate,
-    endDate: endDate || startDate,
-    done: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
+  const monthData = getMonthData();
 
-  elements.taskInput.value = "";
+  if (state.editingTask) {
+    const sourceTasks = monthData[state.editingTask.person];
+    const index = sourceTasks.findIndex((task) => task.id === state.editingTask.id);
+
+    if (index >= 0) {
+      const existingTask = sourceTasks[index];
+      const updatedTask = {
+        ...existingTask,
+        text,
+        category,
+        startDate,
+        endDate: endDate || startDate,
+        done,
+        updatedAt: new Date().toISOString(),
+      };
+
+      sourceTasks.splice(index, 1);
+      monthData[person].push(updatedTask);
+    }
+  } else {
+    monthData[person].push({
+      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+      text,
+      category,
+      startDate,
+      endDate: endDate || startDate,
+      done,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  resetTaskForm();
   saveData();
   render();
+});
+
+elements.taskCancelButton.addEventListener("click", () => {
+  resetTaskForm();
 });
 
 elements.themeToggle.addEventListener("click", () => {
