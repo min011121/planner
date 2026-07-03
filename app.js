@@ -1,6 +1,34 @@
+import { initializeApp as initializeFirebaseApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {
+  doc,
+  getFirestore,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDprZddU0P1QnTodWyQlE6avbvt_jOvzFQ",
+  authDomain: "planner-a826b.firebaseapp.com",
+  projectId: "planner-a826b",
+  storageBucket: "planner-a826b.firebasestorage.app",
+  messagingSenderId: "763540358203",
+  appId: "1:763540358203:web:a711701049fffbf4c0081e",
+};
+
 const STORAGE_KEY = "couple-year-planner-v1";
 const PLANNER_ID = "couple-main";
-const API_URL = `/api/planners/${PLANNER_ID}`;
+
+const firebaseApp = initializeFirebaseApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+const plannerRef = doc(db, "planners", PLANNER_ID);
 
 const PEOPLE = {
   together: "함께",
@@ -25,6 +53,7 @@ const state = {
   isOnline: false,
   saveTimer: null,
   editingTask: null,
+  unsubscribePlanner: null,
 };
 
 const elements = {
@@ -52,8 +81,10 @@ const elements = {
   syncStatus: document.querySelector("#syncStatus"),
   taskTableBody: document.querySelector("#taskTableBody"),
   themeToggle: document.querySelector("#themeToggle"),
+  logoutButton: document.querySelector("#logoutButton"),
   authScreen: document.querySelector("#authScreen"),
   authForm: document.querySelector("#authForm"),
+  emailInput: document.querySelector("#emailInput"),
   passwordInput: document.querySelector("#passwordInput"),
   authError: document.querySelector("#authError"),
 };
@@ -98,50 +129,6 @@ function readLocalData() {
   }
 }
 
-async function loadData() {
-  state.data = readLocalData();
-  render();
-
-  try {
-    const response = await fetch(API_URL);
-    if (!response.ok) {
-      throw new Error("데이터를 불러오지 못했습니다.");
-    }
-
-    const remoteData = await response.json();
-    state.data = normalizeData(remoteData);
-    state.isOnline = true;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
-    setSyncStatus("MySQL과 연결됨");
-  } catch {
-    state.isOnline = false;
-    setSyncStatus("서버 연결 전까지 이 기기에 임시 저장됨");
-  }
-
-  ensureYear(state.selectedYear);
-  render();
-}
-
-async function initializeApp() {
-  try {
-    const response = await fetch("/api/session");
-    const session = await response.json();
-
-    if (session.passwordRequired && !session.authenticated) {
-      elements.authScreen.hidden = false;
-      elements.passwordInput.focus();
-      return;
-    }
-  } catch {
-    elements.authScreen.hidden = false;
-    elements.authError.textContent = "서버 연결을 확인해주세요.";
-    return;
-  }
-
-  elements.authScreen.hidden = true;
-  loadData();
-}
-
 function normalizeData(data) {
   const normalized = data && typeof data === "object" ? data : createDefaultData();
   normalized.years = normalized.years && typeof normalized.years === "object" ? normalized.years : {};
@@ -183,29 +170,62 @@ function normalizeTasks(tasks = []) {
   }));
 }
 
+function subscribePlanner() {
+  state.data = readLocalData();
+  render();
+  setSyncStatus("Firebase 연결 중");
+
+  if (state.unsubscribePlanner) {
+    state.unsubscribePlanner();
+  }
+
+  state.unsubscribePlanner = onSnapshot(
+    plannerRef,
+    async (snapshot) => {
+      if (snapshot.exists()) {
+        const remoteData = snapshot.data().data;
+        state.data = normalizeData(remoteData);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+      } else {
+        state.data = normalizeData(state.data);
+        await setDoc(plannerRef, {
+          data: state.data,
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      state.isOnline = true;
+      setSyncStatus("Firebase에 저장됨");
+      ensureYear(state.selectedYear);
+      render();
+    },
+    () => {
+      state.isOnline = false;
+      setSyncStatus("Firebase 연결 실패, 이 기기에 임시 저장됨");
+      render();
+    },
+  );
+}
+
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
   clearTimeout(state.saveTimer);
 
   state.saveTimer = setTimeout(async () => {
     try {
-      const response = await fetch(API_URL, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      await setDoc(
+        plannerRef,
+        {
+          data: state.data,
+          updatedAt: serverTimestamp(),
         },
-        body: JSON.stringify(state.data),
-      });
-
-      if (!response.ok) {
-        throw new Error("저장 실패");
-      }
-
+        { merge: true },
+      );
       state.isOnline = true;
-      setSyncStatus("MySQL에 저장됨");
+      setSyncStatus("Firebase에 저장됨");
     } catch {
       state.isOnline = false;
-      setSyncStatus("서버 연결 실패, 이 기기에 임시 저장됨");
+      setSyncStatus("Firebase 저장 실패, 이 기기에 임시 저장됨");
     }
   }, 250);
 }
@@ -279,16 +299,6 @@ function formatEditedLabel(value) {
   return `${date.getMonth() + 1}월 ${date.getDate()}일 ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
-function isTaskOnDate(task, date) {
-  if (!task.startDate && !task.endDate) {
-    return false;
-  }
-
-  const start = task.startDate || task.endDate;
-  const end = task.endDate || task.startDate;
-  return start <= date && date <= end;
-}
-
 function isTaskInSelectedMonth(task) {
   if (!task.startDate && !task.endDate) {
     return true;
@@ -330,6 +340,7 @@ function renderYears() {
       button.textContent = `${year}년`;
       button.addEventListener("click", () => {
         state.selectedYear = year;
+        resetTaskForm();
         render();
       });
       return button;
@@ -419,9 +430,7 @@ function createTaskRow(person, task) {
 
   const activityCell = document.createElement("td");
   activityCell.className = "activity-cell";
-  activityCell.innerHTML = `
-    <strong>${task.text}</strong>
-  `;
+  activityCell.innerHTML = `<strong>${task.text}</strong>`;
 
   const categoryCell = document.createElement("td");
   const category = document.createElement("span");
@@ -601,6 +610,7 @@ elements.monthSelect.addEventListener("change", () => {
   state.selectedMonth = Number(elements.monthSelect.value);
   elements.startDateInput.value = "";
   elements.endDateInput.value = "";
+  resetTaskForm();
   render();
 });
 
@@ -698,31 +708,37 @@ elements.themeToggle.addEventListener("click", () => {
   render();
 });
 
+elements.logoutButton.addEventListener("click", () => {
+  signOut(auth);
+});
+
 elements.authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   elements.authError.textContent = "";
 
   try {
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ password: elements.passwordInput.value }),
-    });
-
-    if (!response.ok) {
-      elements.authError.textContent = "비밀번호가 맞지 않습니다.";
-      elements.passwordInput.select();
-      return;
-    }
-
+    await signInWithEmailAndPassword(auth, elements.emailInput.value.trim(), elements.passwordInput.value);
     elements.passwordInput.value = "";
-    elements.authScreen.hidden = true;
-    loadData();
   } catch {
-    elements.authError.textContent = "서버 연결을 확인해주세요.";
+    elements.authError.textContent = "이메일 또는 비밀번호가 맞지 않습니다.";
+    elements.passwordInput.select();
   }
 });
 
-initializeApp();
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    elements.authScreen.hidden = true;
+    subscribePlanner();
+    return;
+  }
+
+  if (state.unsubscribePlanner) {
+    state.unsubscribePlanner();
+    state.unsubscribePlanner = null;
+  }
+
+  state.isOnline = false;
+  elements.authScreen.hidden = false;
+  elements.emailInput.focus();
+  setSyncStatus("로그인이 필요합니다");
+});

@@ -133,6 +133,12 @@ button {
   margin-bottom: 18px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .eyebrow,
 .label {
   margin: 0 0 5px;

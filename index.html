@@ -10,7 +10,8 @@
     <section class="auth-screen" id="authScreen" hidden>
       <form class="auth-card" id="authForm">
         <p class="label">Private Planner</p>
-        <h2>비밀번호를 입력해주세요</h2>
+        <h2>로그인해주세요</h2>
+        <input id="emailInput" type="email" autocomplete="email" placeholder="이메일" aria-label="이메일" />
         <input id="passwordInput" type="password" autocomplete="current-password" placeholder="비밀번호" aria-label="비밀번호" />
         <button type="submit">들어가기</button>
         <p class="auth-error" id="authError" role="alert"></p>
@@ -22,11 +23,16 @@
         <div>
           <p class="eyebrow">둘이 함께 쓰는 계획장</p>
           <h1>우리의 연간 플래너</h1>
-          <p class="sync-status" id="syncStatus">MySQL 연결 준비 중</p>
+          <p class="sync-status" id="syncStatus">Firebase 연결 준비 중</p>
         </div>
-        <button class="icon-button" id="themeToggle" type="button" aria-label="테마 바꾸기" title="테마 바꾸기">
-          <span aria-hidden="true">◐</span>
-        </button>
+        <div class="topbar-actions">
+          <button class="icon-button" id="themeToggle" type="button" aria-label="테마 바꾸기" title="테마 바꾸기">
+            <span aria-hidden="true">◐</span>
+          </button>
+          <button class="icon-button" id="logoutButton" type="button" aria-label="로그아웃" title="로그아웃">
+            <span aria-hidden="true">↪</span>
+          </button>
+        </div>
       </header>
 
       <section class="panel year-panel" aria-label="년도 선택">
@@ -118,7 +124,7 @@
                 <th>유형</th>
                 <th>최종편집</th>
                 <th>날짜</th>
-                <th>삭제</th>
+                <th>관리</th>
               </tr>
             </thead>
             <tbody id="taskTableBody"></tbody>
@@ -146,6 +152,6 @@
       </section>
     </main>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>
