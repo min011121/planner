@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>우리의 연간 플래너</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">둘이 함께 쓰는 계획장</p>
+          <h1>우리의 연간 플래너</h1>
+          <p class="sync-status" id="syncStatus">MySQL 연결 준비 중</p>
+        </div>
+        <button class="icon-button" id="themeToggle" type="button" aria-label="테마 바꾸기" title="테마 바꾸기">
+          <span aria-hidden="true">◐</span>
+        </button>
+      </header>
+
+      <section class="panel year-panel" aria-label="년도 선택">
+        <div class="section-title">
+          <div>
+            <p class="label">Year Project</p>
+            <h2 id="selectedYearTitle">2026년 프로젝트</h2>
+          </div>
+          <form class="add-year" id="yearForm">
+            <input id="yearInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="년도" aria-label="추가할 년도" />
+            <button type="submit">추가</button>
+          </form>
+        </div>
+        <label class="project-title-field">
+          <span>올해 프로젝트 이름</span>
+          <input id="yearTitleInput" maxlength="40" placeholder="예: 같이 성장하는 2026" aria-label="년도 프로젝트 이름" />
+        </label>
+        <div class="year-strip" id="yearStrip" aria-label="년도 목록"></div>
+      </section>
+
+      <section class="panel overview-bar" aria-label="월 선택과 요약">
+        <label class="month-select-wrap summary-month-select">
+          <span>월</span>
+          <select id="monthSelect" aria-label="월 선택"></select>
+        </label>
+        <div class="overview-main">
+          <div>
+            <p class="label">Overview</p>
+            <h2 id="summaryTitle">7월 한눈에 보기</h2>
+          </div>
+          <div class="summary-list" id="summaryList"></div>
+        </div>
+      </section>
+
+      <section class="panel month-detail" aria-label="월간 계획">
+        <div class="section-title compact">
+          <div>
+            <p class="label">Monthly Plan</p>
+            <h2 id="selectedMonthTitle">7월 계획</h2>
+          </div>
+          <div class="progress-pill" id="progressPill">0 / 0 완료</div>
+        </div>
+
+        <label class="project-title-field month-title-field">
+          <span>이번 달 프로젝트 이름</span>
+          <input id="monthTitleInput" maxlength="40" placeholder="예: SQLD 자격증 따기" aria-label="월 프로젝트 이름" />
+        </label>
+
+        <form class="task-form" id="taskForm">
+          <input class="task-main-input" id="taskInput" maxlength="80" placeholder="할 일을 적어주세요" aria-label="새 할 일" />
+          <div class="task-options">
+            <label>
+              <span>담당</span>
+              <select id="personSelect" aria-label="담당 선택">
+                <option value="together">함께</option>
+                <option value="me">민재</option>
+                <option value="partner">정현</option>
+              </select>
+            </label>
+            <label>
+              <span>카테고리</span>
+              <select id="categorySelect" aria-label="카테고리 선택">
+                <option value="todo">할일</option>
+                <option value="study">공부</option>
+                <option value="certificate">자격증</option>
+              </select>
+            </label>
+            <label>
+              <span>시작</span>
+              <input id="startDateInput" type="date" aria-label="시작일" />
+            </label>
+            <label>
+              <span>종료</span>
+              <input id="endDateInput" type="date" aria-label="종료일" />
+            </label>
+            <button type="submit">등록</button>
+          </div>
+        </form>
+
+        <div class="task-table-wrap">
+          <table class="task-table">
+            <thead>
+              <tr>
+                <th>상태</th>
+                <th>활동</th>
+                <th>유형</th>
+                <th>최종편집</th>
+                <th>날짜</th>
+                <th>삭제</th>
+              </tr>
+            </thead>
+            <tbody id="taskTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel calendar-panel" aria-label="달력">
+        <div class="section-title compact">
+          <div>
+            <p class="label">Calendar</p>
+            <h2 id="calendarTitle">7월 달력</h2>
+          </div>
+        </div>
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span>일</span>
+          <span>월</span>
+          <span>화</span>
+          <span>수</span>
+          <span>목</span>
+          <span>금</span>
+          <span>토</span>
+        </div>
+        <div class="calendar-board" id="calendarBoard"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
